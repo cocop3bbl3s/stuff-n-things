@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cody's Tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    .float { animation: float 3s ease-in-out infinite; }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animated-gradient {
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+  </style>
+</head>
+<body class="animated-gradient min-h-screen">
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <nav class="p-6">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-white">Cody's Tools</h1>
+        <div class="space-x-6">
+          <a href="#projects" class="text-white hover:text-white/80 transition">Projects</a>
+          <a href="#about" class="text-white hover:text-white/80 transition">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="flex-grow flex items-center justify-center px-6 py-20">
+      <div class="text-center max-w-4xl">
+        <div class="text-6xl mb-6 float">🛠️</div>
+        <h2 class="text-6xl md:text-7xl font-bold text-white mb-6">
+          Building Cool Stuff
+        </h2>
+        <p class="text-xl md:text-2xl text-white/90 mb-12 max-w-2xl mx-auto">
+          A collection of tools and experiments I've built to solve real problems and learn new things.
+        </p>
+        <a 
+          href="#projects" 
+          class="inline-block bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-white/90 transform hover:scale-105 transition shadow-2xl"
+        >
+          Check Out My Projects →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects Section -->
+  <div id="projects" class="bg-slate-900 py-20 px-6">
+    <div class="max-w-6xl mx-auto">
+      <h3 class="text-4xl font-bold text-white mb-4 text-center">Projects</h3>
+      <p class="text-xl text-slate-300 mb-12 text-center max-w-2xl mx-auto">
+        Tools I've built to make life easier (or just more interesting)
+      </p>
+
+      <!-- Project Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- Vibe Tagger Project -->
+        <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-8 shadow-2xl hover:scale-105 transition transform">
+          <div class="text-5xl mb-4">🎵</div>
+          <h4 class="text-2xl font-bold text-white mb-3">Spotify Vibe Tagger</h4>
+          <p class="text-white/90 mb-6">
+            Organize your Spotify library by vibes! Tag songs with moods and create custom playlists based on how you're feeling.
+          </p>
+          <div class="flex flex-wrap gap-2 mb-6">
+            <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full">Music</span>
+            <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full">Data</span>
+            <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full">Web App</span>
+          </div>
+          <a 
+            href="vibe_tagger.html" 
+            class="inline-block bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-white/90 transition w-full text-center"
+          >
+            Launch App →
+          </a>
+        </div>
+
+        <!-- Placeholder for Future Project 1 -->
+        <div class="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-2xl p-8 flex items-center justify-center hover:border-slate-500 transition">
+          <div class="text-center">
+            <div class="text-5xl mb-4">✨</div>
+            <p class="text-slate-400 font-semibold">Next Project Coming Soon...</p>
+          </div>
+        </div>
+
+        <!-- Placeholder for Future Project 2 -->
+        <div class="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-2xl p-8 flex items-center justify-center hover:border-slate-500 transition">
+          <div class="text-center">
+            <div class="text-5xl mb-4">🚀</div>
+            <p class="text-slate-400 font-semibold">More Ideas in the Works...</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- About Section -->
+  <div id="about" class="bg-slate-950 py-20 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <h3 class="text-4xl font-bold text-white mb-6">About This Space</h3>
+      <p class="text-xl text-slate-300 mb-8 leading-relaxed">
+        This is my playground for building useful tools and learning new things. 
+        Each project starts with a problem I want to solve or an idea I want to explore. 
+        Some are practical, some are just for fun, but all of them teach me something new.
+      </p>
+      <p class="text-lg text-slate-400">
+        Built with curiosity, caffeine, and a lot of help from Claude ☕️
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-black py-8 px-6">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-slate-500">
+        © 2025 Cody's Tools | Built with HTML, Tailwind, and determination
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

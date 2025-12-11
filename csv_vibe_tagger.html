@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Tagger</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 min-h-screen">
+  <div class="container mx-auto p-8 max-w-4xl">
+    <!-- File Upload Section -->
+    <div id="uploadSection" class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 mb-8">
+      <h1 class="text-4xl font-bold text-white mb-4">🎵 Vibe Tagger</h1>
+      <p class="text-purple-200 mb-6">Upload your Spotify CSV to start tagging songs with vibes</p>
+      
+      <input 
+        type="file" 
+        id="csvFile" 
+        accept=".csv"
+        class="block w-full text-white bg-white/10 border border-white/20 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition"
+      />
+      <button 
+        onclick="loadCSV()" 
+        class="mt-4 bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg font-semibold transition w-full"
+      >
+        Load Songs
+      </button>
+    </div>
+
+    <!-- Tagger Section (hidden initially) -->
+    <div id="taggerSection" style="display: none;">
+      <!-- Progress Bar -->
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-white font-semibold">Progress</span>
+          <span class="text-purple-300"><span id="currentNum">0</span> / <span id="totalNum">0</span></span>
+        </div>
+        <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+          <div id="progressBar" class="bg-gradient-to-r from-green-400 to-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Current Song Card -->
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 mb-8">
+        <div class="text-center mb-8">
+          <div class="text-6xl mb-4">🎵</div>
+          <h2 id="songTitle" class="text-4xl font-bold text-white mb-2"></h2>
+          <p id="songArtist" class="text-2xl text-purple-300 mb-1"></p>
+          <p id="songAlbum" class="text-lg text-purple-400"></p>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-white font-semibold mb-4 text-center">Select vibes for this song:</h3>
+          <div id="vibeButtons" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex gap-4 justify-center">
+          <button 
+            onclick="goBack()" 
+            id="backBtn"
+            class="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Back
+          </button>
+          <button 
+            onclick="skip()" 
+            class="bg-yellow-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-600 transition"
+          >
+            Skip
+          </button>
+          <button 
+            onclick="saveAndNext()" 
+            class="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+          >
+            Save & Next →
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats & Export -->
+      <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+        <div class="flex justify-between items-center">
+          <div class="text-white">
+            <div class="text-sm text-purple-300 mb-1">Tagged so far</div>
+            <div class="text-3xl font-bold"><span id="taggedCount">0</span> songs</div>
+          </div>
+          <button 
+            onclick="exportTags()" 
+            class="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition"
+          >
+            💾 Export Tags
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VIBE_OPTIONS = [
+      { name: "Party", emoji: "🎉", color: "bg-pink-500" },
+      { name: "Chill", emoji: "😌", color: "bg-blue-500" },
+      { name: "Workout", emoji: "💪", color: "bg-red-500" },
+      { name: "Sad", emoji: "😢", color: "bg-indigo-500" },
+      { name: "Happy", emoji: "😊", color: "bg-yellow-500" },
+      { name: "Focus", emoji: "🧠", color: "bg-purple-500" },
+      { name: "Road Trip", emoji: "🚗", color: "bg-orange-500" },
+      { name: "Late Night", emoji: "🌙", color: "bg-slate-700" },
+      { name: "Romantic", emoji: "💕", color: "bg-rose-500" },
+      { name: "Energetic", emoji: "⚡", color: "bg-amber-500" },
+    ];
+
+    let songs = [];
+    let currentIndex = 0;
+    let tags = {};
+    let selectedVibes = [];
+
+    function parseCSV(text) {
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let char of lines[i]) {
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim().replace(/^"|"$/g, ''));
+
+        const row = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx] || '';
+        });
+        data.push(row);
+      }
+
+      return data;
+    }
+
+    function loadCSV() {
+      const file = document.getElementById('csvFile').files[0];
+      if (!file) {
+        alert('Please select a CSV file first!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        songs = parseCSV(e.target.result);
+        if (songs.length === 0) {
+          alert('No songs found in CSV!');
+          return;
+        }
+
+        document.getElementById('uploadSection').style.display = 'none';
+        document.getElementById('taggerSection').style.display = 'block';
+        document.getElementById('totalNum').textContent = songs.length;
+        
+        createVibeButtons();
+        showSong(0);
+      };
+      reader.readAsText(file);
+    }
+
+    function createVibeButtons() {
+      const container = document.getElementById('vibeButtons');
+      container.innerHTML = '';
+      
+      VIBE_OPTIONS.forEach(vibe => {
+        const btn = document.createElement('button');
+        btn.className = `${vibe.color} text-white p-4 rounded-xl font-semibold transition-all transform hover:scale-105 opacity-60`;
+        btn.onclick = () => toggleVibe(vibe.name, btn);
+        btn.innerHTML = `
+          <div class="text-3xl mb-1">${vibe.emoji}</div>
+          <div class="text-sm">${vibe.name}</div>
+        `;
+        btn.dataset.vibe = vibe.name;
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleVibe(vibeName, btn) {
+      if (selectedVibes.includes(vibeName)) {
+        selectedVibes = selectedVibes.filter(v => v !== vibeName);
+        btn.classList.remove('ring-4', 'ring-white', 'scale-105');
+        btn.classList.add('opacity-60');
+      } else {
+        selectedVibes.push(vibeName);
+        btn.classList.add('ring-4', 'ring-white', 'scale-105');
+        btn.classList.remove('opacity-60');
+      }
+    }
+
+    function showSong(index) {
+      currentIndex = index;
+      const song = songs[index];
+      
+      document.getElementById('songTitle').textContent = song.track_name || 'Unknown';
+      document.getElementById('songArtist').textContent = song.artist || 'Unknown Artist';
+      document.getElementById('songAlbum').textContent = song.album || '';
+      document.getElementById('currentNum').textContent = index + 1;
+      
+      const progress = ((index + 1) / songs.length) * 100;
+      document.getElementById('progressBar').style.width = progress + '%';
+      
+      document.getElementById('backBtn').disabled = index === 0;
+      
+      // Restore saved vibes for this song
+      selectedVibes = tags[index] || [];
+      updateVibeButtonStates();
+      updateTaggedCount();
+    }
+
+    function updateVibeButtonStates() {
+      const buttons = document.querySelectorAll('#vibeButtons button');
+      buttons.forEach(btn => {
+        const vibeName = btn.dataset.vibe;
+        if (selectedVibes.includes(vibeName)) {
+          btn.classList.add('ring-4', 'ring-white', 'scale-105');
+          btn.classList.remove('opacity-60');
+        } else {
+          btn.classList.remove('ring-4', 'ring-white', 'scale-105');
+          btn.classList.add('opacity-60');
+        }
+      });
+    }
+
+    function updateTaggedCount() {
+      document.getElementById('taggedCount').textContent = Object.keys(tags).length;
+    }
+
+    function saveAndNext() {
+      tags[currentIndex] = [...selectedVibes];
+      if (currentIndex < songs.length - 1) {
+        showSong(currentIndex + 1);
+      } else {
+        alert('You\'ve tagged all songs! Click Export to save your work.');
+      }
+    }
+
+    function skip() {
+      if (currentIndex < songs.length - 1) {
+        showSong(currentIndex + 1);
+      }
+    }
+
+    function goBack() {
+      if (currentIndex > 0) {
+        showSong(currentIndex - 1);
+      }
+    }
+
+    function exportTags() {
+      let csv = 'Track Name,Artist,Album,Vibes\n';
+      songs.forEach((song, idx) => {
+        const vibes = tags[idx] ? tags[idx].join(';') : '';
+        csv += `"${song.track_name || ''}","${song.artist || ''}","${song.album || ''}","${vibes}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tagged_songs.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Tags exported! You can now use this CSV to create playlists.');
+    }
+  </script>
+</body>
+</html>

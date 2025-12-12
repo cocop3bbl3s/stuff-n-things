@@ -6,6 +6,17 @@
   <title>Cody Codes</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Password screen styling */
+    #passwordScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+    
     /* Hide content until password is entered */
     #mainContent {
       display: none;
@@ -36,42 +47,26 @@
     // Password protection - change "mypassword" to whatever you want
     const correctPassword = "br4t4evr";
     
-    function checkPassword() {
-      const userPassword = prompt("🔒 This site is under construction. Enter password:");
+    function checkPasswordInput() {
+      const input = document.getElementById('passwordInput');
+      const errorMsg = document.getElementById('errorMsg');
       
-      if (userPassword === null) {
-        // User clicked cancel
-        showAccessDenied();
-        return;
-      }
-      
-      if (userPassword !== correctPassword) {
-        alert("❌ Incorrect password. Please try again.");
-        checkPassword(); // Ask again
-      } else {
-        // Correct password - show the content
+      if (input.value === correctPassword) {
+        // Correct password - show content
+        document.getElementById('passwordScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
+      } else {
+        // Wrong password
+        errorMsg.textContent = '❌ Incorrect password. Try again.';
+        input.value = '';
+        input.focus();
       }
     }
     
-    function showAccessDenied() {
-      document.body.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: sans-serif;">
-          <div style="text-align: center; color: white;">
-            <h1 style="font-size: 3rem; margin-bottom: 1rem;">🔒</h1>
-            <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Access Denied</h2>
-            <p style="opacity: 0.8;">Password required to view this site.</p>
-            <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.75rem 2rem; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Try Again</button>
-          </div>
-        </div>
-      `;
-    }
-    
-    // Run password check when page loads
+    // Run when page loads
     window.onload = function() {
-      if (PASSWORD_ENABLED) {
-        checkPassword();
-      } else {
+      if (!PASSWORD_ENABLED) {
+        document.getElementById('passwordScreen').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
       }
     };
@@ -95,9 +90,33 @@
     }
   </style>
 </head>
-<body class="animated-gradient min-h-screen">
+<body>
+  <!-- Password Screen -->
+  <div id="passwordScreen">
+    <div class="text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md mx-4">
+      <div class="text-6xl mb-4">🔒</div>
+      <h1 class="text-3xl font-bold text-white mb-2">Site Under Construction</h1>
+      <p class="text-white/80 mb-6">Enter password to continue</p>
+      <input
+        type="password"
+        id="passwordInput"
+        placeholder="Password"
+        class="w-full bg-white/20 text-white placeholder-white/50 border border-white/30 rounded-lg px-4 py-3 mb-2 focus:outline-none focus:ring-2 focus:ring-white/50"
+        onkeypress="if(event.key === 'Enter') checkPasswordInput()"
+      />
+      <p id="errorMsg" class="text-red-300 text-sm mb-4 h-5"></p>
+      <button
+        onclick="checkPasswordInput()"
+        class="w-full bg-white text-purple-600 px-6 py-3 rounded-lg font-bold hover:bg-white/90 transition"
+      >
+        Enter
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
   <div id="mainContent">
-    <div class="min-h-screen flex flex-col">
+    <div class="animated-gradient min-h-screen">
     <!-- Header -->
     <nav class="p-6">
       <div class="max-w-6xl mx-auto flex justify-between items-center">

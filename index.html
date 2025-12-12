@@ -1,18 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-  <script>
-  const password = "br4t4evr";
-  const userPassword = prompt("Enter password to access:");
-  if (userPassword !== password) {
-    document.body.innerHTML = "<h1>Access Denied</h1>";
-    throw new Error("Access denied");
-  }
-</script>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cody's Catalog</title>
+  <title>Cody Codes</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Hide content until password is entered */
+    #mainContent {
+      display: none;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    .float { animation: float 3s ease-in-out infinite; }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animated-gradient {
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+  </style>
+  <script>
+    // ========== PASSWORD TOGGLE ==========
+    const PASSWORD_ENABLED = true; // Change to false to disable password protection
+    // =====================================
+    
+    // Password protection - change "mypassword" to whatever you want
+    const correctPassword = "br4t4evr";
+    
+    function checkPassword() {
+      const userPassword = prompt("🔒 This site is under construction. Enter password:");
+      
+      if (userPassword === null) {
+        // User clicked cancel
+        showAccessDenied();
+        return;
+      }
+      
+      if (userPassword !== correctPassword) {
+        alert("❌ Incorrect password. Please try again.");
+        checkPassword(); // Ask again
+      } else {
+        // Correct password - show the content
+        document.getElementById('mainContent').style.display = 'block';
+      }
+    }
+    
+    function showAccessDenied() {
+      document.body.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: sans-serif;">
+          <div style="text-align: center; color: white;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem;">🔒</h1>
+            <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Access Denied</h2>
+            <p style="opacity: 0.8;">Password required to view this site.</p>
+            <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.75rem 2rem; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Try Again</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Run password check when page loads
+    window.onload = function() {
+      if (PASSWORD_ENABLED) {
+        checkPassword();
+      } else {
+        document.getElementById('mainContent').style.display = 'block';
+      }
+    };
+  </script>
   <style>
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
@@ -33,11 +96,12 @@
   </style>
 </head>
 <body class="animated-gradient min-h-screen">
-  <div class="min-h-screen flex flex-col">
+  <div id="mainContent">
+    <div class="min-h-screen flex flex-col">
     <!-- Header -->
     <nav class="p-6">
       <div class="max-w-6xl mx-auto flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-white">Cody's Catalog</h1>
+        <h1 class="text-2xl font-bold text-white">Cody Codes</h1>
         <div class="space-x-6">
           <a href="#projects" class="text-white hover:text-white/80 transition">Projects</a>
           <a href="#about" class="text-white hover:text-white/80 transition">About</a>
@@ -135,7 +199,7 @@
   <footer class="bg-black py-8 px-6">
     <div class="max-w-6xl mx-auto text-center">
       <p class="text-slate-500">
-        © 2025 Cody's Catalog | Built with HTML, Tailwind, and determination
+        © 2025 Cody Codes | Built with HTML, Tailwind, and determination
       </p>
     </div>
   </footer>

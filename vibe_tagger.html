@@ -3,22 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vibe Tagger</title>
+  <title>Playlist Vibe Curator</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .animated-gradient {
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+      position: relative;
+    }
+    
+    body {
+      overflow-y: auto;
+    }
+    
+    /* Floating blobs in background */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.3;
+      animation: blobFloat 20s ease-in-out infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(100px, -100px) scale(1.1); }
+      66% { transform: translate(-100px, 100px) scale(0.9); }
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 min-h-screen">
-  <div class="container mx-auto p-8 max-w-4xl">
+<body class="animated-gradient min-h-screen">
+  <!-- Floating blobs -->
+  <div class="blob" style="width: 300px; height: 300px; background: #ff0080; top: 10%; left: 10%;"></div>
+  <div class="blob" style="width: 400px; height: 400px; background: #00d4ff; top: 50%; right: 10%; animation-delay: -5s;"></div>
+  <div class="blob" style="width: 250px; height: 250px; background: #ffeb3b; bottom: 10%; left: 30%; animation-delay: -10s;"></div>
+
+  <div class="container mx-auto p-8 max-w-4xl relative z-10">
     <!-- File Upload Section -->
     <div id="uploadSection" class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 mb-8">
-      <h1 class="text-4xl font-bold text-white mb-4">🎵 Vibe Tagger</h1>
-      <p class="text-purple-200 mb-6">Upload your Spotify CSV to start tagging songs with vibes</p>
+      <h1 class="text-4xl font-bold text-white mb-4">🎵 Vibe Curator</h1>
+      <p class="text-white/90 mb-6">Upload your Spotify CSV to start tagging songs with vibes</p>
       
-      <input 
-        type="file" 
-        id="csvFile" 
-        accept=".csv"
-        class="block w-full text-white bg-white/10 border border-white/20 rounded-lg p-3 cursor-pointer hover:bg-white/20 transition"
-      />
+      <!-- Instructions -->
+      <div class="bg-white/5 border border-white/20 rounded-xl p-4 mb-6">
+        <h3 class="text-white font-semibold mb-2 flex items-center gap-2">
+          <span>💡</span>
+          How to get your Spotify data:
+        </h3>
+        <ol class="text-white/80 text-sm space-y-2 ml-6 list-decimal">
+          <li>Go to <a href="https://exportify.net/" target="_blank" class="text-green-400 hover:text-green-300 underline">Exportify.net</a></li>
+          <li>Log in with your Spotify account</li>
+          <li>Click "Export" on any playlist to download a CSV file</li>
+          <li>Upload that CSV file here to start tagging!</li>
+        </ol>
+        <p class="text-white/60 text-xs mt-3">
+          Note: Exportify includes preview URLs and album artwork automatically, so everything will work perfectly!
+        </p>
+      </div>
+      
+      <!-- Styled File Upload -->
+      <label class="block cursor-pointer group" id="dropZone">
+        <div class="bg-white/10 hover:bg-white/20 border-2 border-dashed border-white/30 hover:border-white/50 rounded-xl p-6 transition text-center">
+          <div class="text-4xl mb-2">📁</div>
+          <div class="text-white font-semibold mb-1">Choose a CSV file</div>
+          <div class="text-white/60 text-sm" id="fileName">or drag and drop here</div>
+        </div>
+        <input 
+          type="file" 
+          id="csvFile" 
+          accept=".csv"
+          class="hidden"
+          onchange="updateFileName()"
+        />
+      </label>
+      
       <button 
         onclick="loadCSV()" 
         class="mt-4 bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg font-semibold transition w-full"
@@ -33,21 +99,61 @@
       <div class="mb-8">
         <div class="flex justify-between items-center mb-2">
           <span class="text-white font-semibold">Progress</span>
-          <span class="text-purple-300"><span id="currentNum">0</span> / <span id="totalNum">0</span></span>
+          <span class="text-white/90"><span id="currentNum">0</span> / <span id="totalNum">0</span></span>
         </div>
         <div class="w-full bg-white/20 rounded-full h-3 overflow-hidden">
           <div id="progressBar" class="bg-gradient-to-r from-green-400 to-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
 
+      <!-- Now Playing Bar -->
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/20 mb-8">
+        <div class="flex items-center gap-6">
+          <!-- Album Artwork -->
+          <div class="flex-shrink-0">
+            <img 
+              id="albumArt" 
+              src="" 
+              alt="Album artwork"
+              class="w-32 h-32 rounded-lg shadow-lg object-cover bg-white/5"
+              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22128%22 height=%22128%22%3E%3Crect fill=%22%23333%22 width=%22128%22 height=%22128%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎵%3C/text%3E%3C/svg%3E'"
+            />
+          </div>
+          
+          <!-- Song Info & Controls -->
+          <div class="flex-grow">
+            <h2 id="songTitle" class="text-3xl font-bold text-white mb-1"></h2>
+            <p id="songArtist" class="text-xl text-white/80 mb-3"></p>
+            
+            <!-- Playback Controls -->
+            <div class="flex items-center gap-4">
+              <button 
+                id="playBtn"
+                onclick="togglePlay()" 
+                class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-full font-semibold transition flex items-center justify-center text-2xl"
+              >
+                <span id="playIcon">▶️</span>
+              </button>
+              
+              <!-- Progress Bar -->
+              <div class="flex-grow">
+                <div class="flex items-center gap-2 mb-1">
+                  <span id="currentTime" class="text-white/70 text-sm font-mono">0:00</span>
+                  <div class="flex-grow bg-white/20 rounded-full h-2 overflow-hidden cursor-pointer" onclick="seekAudio(event)">
+                    <div id="audioProgress" class="bg-green-400 h-full transition-all" style="width: 0%"></div>
+                  </div>
+                  <span id="duration" class="text-white/70 text-sm font-mono">0:30</span>
+                </div>
+              </div>
+            </div>
+            
+            <audio id="audioPlayer" style="display: none;"></audio>
+          </div>
+        </div>
+      </div>
+
       <!-- Current Song Card -->
       <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 mb-8">
-        <div class="text-center mb-8">
-          <div class="text-6xl mb-4">🎵</div>
-          <h2 id="songTitle" class="text-4xl font-bold text-white mb-2"></h2>
-          <p id="songArtist" class="text-2xl text-purple-300 mb-1"></p>
-          <p id="songAlbum" class="text-lg text-purple-400"></p>
-        </div>
 
         <div class="mb-6">
           <h3 class="text-white font-semibold mb-4 text-center">Select vibes for this song:</h3>
@@ -79,25 +185,83 @@
       </div>
 
       <!-- Stats & Export -->
-      <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+      <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 mb-8">
         <div class="flex justify-between items-center">
           <div class="text-white">
-            <div class="text-sm text-purple-300 mb-1">Tagged so far</div>
+            <div class="text-sm text-white/70 mb-1">Tagged so far</div>
             <div class="text-3xl font-bold"><span id="taggedCount">0</span> songs</div>
           </div>
-          <button 
-            onclick="exportTags()" 
-            class="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition"
-          >
-            💾 Export Tags
-          </button>
+          <div class="flex gap-3">
+            <button 
+              onclick="if(confirm('Clear all saved progress? This cannot be undone.')) { clearProgress(); location.reload(); }" 
+              class="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition"
+            >
+              🗑️ Clear Progress
+            </button>
+            <button 
+              onclick="exportTags()" 
+              class="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition"
+            >
+              💾 Export Tags
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vibe Management Section -->
+      <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+        <h3 class="text-white font-semibold mb-4">Manage Vibe Options</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div id="vibeList" class="space-y-2"></div>
+          
+          <!-- Add New Vibe Form -->
+          <div class="bg-white/5 rounded-lg p-4">
+            <h4 class="text-white font-semibold mb-3">Add New Vibe</h4>
+            <input 
+              type="text" 
+              id="newVibeName" 
+              placeholder="Vibe name (e.g., Energetic)"
+              class="w-full bg-white/10 text-white placeholder-white/50 border border-white/30 rounded-lg px-3 py-2 mb-2"
+            />
+            <input 
+              type="text" 
+              id="newVibeEmoji" 
+              placeholder="Emoji (e.g., ⚡)"
+              class="w-full bg-white/10 text-white placeholder-white/50 border border-white/30 rounded-lg px-3 py-2 mb-2"
+              maxlength="2"
+            />
+            <select 
+              id="newVibeColor" 
+              class="w-full bg-white/10 text-white border border-white/30 rounded-lg px-3 py-2 mb-3"
+            >
+              <option value="bg-pink-500">Pink</option>
+              <option value="bg-blue-500">Blue</option>
+              <option value="bg-red-500">Red</option>
+              <option value="bg-indigo-500">Indigo</option>
+              <option value="bg-yellow-500">Yellow</option>
+              <option value="bg-purple-500">Purple</option>
+              <option value="bg-orange-500">Orange</option>
+              <option value="bg-slate-700">Slate</option>
+              <option value="bg-rose-500">Rose</option>
+              <option value="bg-amber-500">Amber</option>
+              <option value="bg-green-500">Green</option>
+              <option value="bg-teal-500">Teal</option>
+            </select>
+            <button 
+              onclick="addVibe()" 
+              class="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition"
+            >
+              Add Vibe
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    const VIBE_OPTIONS = [
+    let VIBE_OPTIONS = [
       { name: "Party", emoji: "🎉", color: "bg-pink-500" },
       { name: "Chill", emoji: "😌", color: "bg-blue-500" },
       { name: "Workout", emoji: "💪", color: "bg-red-500" },
@@ -114,6 +278,56 @@
     let currentIndex = 0;
     let tags = {};
     let selectedVibes = [];
+    let audioPlayer = null;
+    let isPlaying = false;
+    let currentFileName = '';
+
+    // Save progress to localStorage
+    function saveProgress() {
+      const progress = {
+        fileName: currentFileName,
+        currentIndex: currentIndex,
+        tags: tags,
+        vibeOptions: VIBE_OPTIONS,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('vibeTaggerProgress', JSON.stringify(progress));
+      console.log('Progress saved!');
+    }
+
+    // Load progress from localStorage
+    function loadProgress() {
+      const saved = localStorage.getItem('vibeTaggerProgress');
+      if (saved) {
+        try {
+          const progress = JSON.parse(saved);
+          return progress;
+        } catch (e) {
+          console.error('Error loading progress:', e);
+          return null;
+        }
+      }
+      return null;
+    }
+
+    // Clear saved progress
+    function clearProgress() {
+      localStorage.removeItem('vibeTaggerProgress');
+      console.log('Progress cleared!');
+    }
+
+    function updateFileName() {
+      const fileInput = document.getElementById('csvFile');
+      const fileNameDisplay = document.getElementById('fileName');
+      
+      if (fileInput.files.length > 0) {
+        fileNameDisplay.textContent = fileInput.files[0].name;
+        fileNameDisplay.classList.add('text-green-300');
+      } else {
+        fileNameDisplay.textContent = 'or drag and drop here';
+        fileNameDisplay.classList.remove('text-green-300');
+      }
+    }
 
     function parseCSV(text) {
       const lines = text.split('\n');
@@ -149,6 +363,21 @@
       return data;
     }
 
+    async function enrichSongData(song) {
+      // Exportify uses these column names (case-sensitive):
+      // Track Name, Artist Name(s), Album Name, Track URI, Preview URL, Album Image URL
+      
+      // Normalize the column names to what we expect
+      song.track_name = song['Track Name'] || song.track_name || song.name || '';
+      song.artist = song['Artist Name(s)'] || song.artist || song['Artist Name'] || '';
+      song.album = song['Album Name'] || song.album || '';
+      song.preview_url = song['Preview URL'] || song.preview_url || song.track_preview_url || '';
+      song.album_art = song['Album Image URL'] || song.album_art || song.album_image || song.image_url || '';
+      song.spotify_url = song['Track URI'] || song.spotify_url || song.track_url || '';
+      
+      return song;
+    }
+
     function loadCSV() {
       const file = document.getElementById('csvFile').files[0];
       if (!file) {
@@ -156,20 +385,63 @@
         return;
       }
 
+      currentFileName = file.name;
+
+      // Check if there's saved progress for this file
+      const savedProgress = loadProgress();
+      if (savedProgress && savedProgress.fileName === currentFileName) {
+        const resume = confirm(`Found saved progress for "${currentFileName}"!\n\nYou were at song ${savedProgress.currentIndex + 1} with ${Object.keys(savedProgress.tags).length} songs tagged.\n\nClick OK to resume, or Cancel to start over.`);
+        
+        if (!resume) {
+          clearProgress();
+        }
+      }
+
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         songs = parseCSV(e.target.result);
         if (songs.length === 0) {
           alert('No songs found in CSV!');
           return;
         }
 
+        // Log the first song to see what columns we have
+        console.log('First song data:', songs[0]);
+        console.log('Available columns:', Object.keys(songs[0]));
+
+        // Enrich song data
+        for (let i = 0; i < songs.length; i++) {
+          songs[i] = await enrichSongData(songs[i]);
+        }
+
+        console.log('First song after enrichment:', songs[0]);
+
+        // Restore saved progress if exists
+        const savedProgress = loadProgress();
+        if (savedProgress && savedProgress.fileName === currentFileName) {
+          tags = savedProgress.tags || {};
+          currentIndex = savedProgress.currentIndex || 0;
+          if (savedProgress.vibeOptions) {
+            VIBE_OPTIONS = savedProgress.vibeOptions;
+          }
+        }
+
         document.getElementById('uploadSection').style.display = 'none';
         document.getElementById('taggerSection').style.display = 'block';
         document.getElementById('totalNum').textContent = songs.length;
         
+        audioPlayer = document.getElementById('audioPlayer');
+        
+        // Update progress bar as audio plays
+        audioPlayer.addEventListener('timeupdate', updateProgressBar);
+        audioPlayer.addEventListener('ended', () => {
+          isPlaying = false;
+          updatePlayButton();
+        });
+        
         createVibeButtons();
-        showSong(0);
+        updateVibeList();
+        showSong(currentIndex);
       };
       reader.readAsText(file);
     }
@@ -191,6 +463,68 @@
       });
     }
 
+    function updateVibeList() {
+      const container = document.getElementById('vibeList');
+      container.innerHTML = '';
+      
+      VIBE_OPTIONS.forEach((vibe, index) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between bg-white/5 rounded-lg p-3';
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">${vibe.emoji}</span>
+            <span class="text-white font-semibold">${vibe.name}</span>
+          </div>
+          <button 
+            onclick="removeVibe(${index})" 
+            class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition"
+          >
+            Remove
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addVibe() {
+      const name = document.getElementById('newVibeName').value.trim();
+      const emoji = document.getElementById('newVibeEmoji').value.trim();
+      const color = document.getElementById('newVibeColor').value;
+      
+      if (!name || !emoji) {
+        alert('Please enter both a name and an emoji!');
+        return;
+      }
+      
+      VIBE_OPTIONS.push({ name, emoji, color });
+      
+      document.getElementById('newVibeName').value = '';
+      document.getElementById('newVibeEmoji').value = '';
+      
+      createVibeButtons();
+      updateVibeList();
+      updateVibeButtonStates();
+    }
+
+    function removeVibe(index) {
+      if (confirm(`Remove "${VIBE_OPTIONS[index].name}" vibe?`)) {
+        const removedVibeName = VIBE_OPTIONS[index].name;
+        VIBE_OPTIONS.splice(index, 1);
+        
+        // Remove this vibe from all tagged songs
+        Object.keys(tags).forEach(songIndex => {
+          tags[songIndex] = tags[songIndex].filter(v => v !== removedVibeName);
+        });
+        
+        // Remove from current selection
+        selectedVibes = selectedVibes.filter(v => v !== removedVibeName);
+        
+        createVibeButtons();
+        updateVibeList();
+        updateVibeButtonStates();
+      }
+    }
+
     function toggleVibe(vibeName, btn) {
       if (selectedVibes.includes(vibeName)) {
         selectedVibes = selectedVibes.filter(v => v !== vibeName);
@@ -203,13 +537,99 @@
       }
     }
 
+    async function togglePlay() {
+      if (isPlaying) {
+        audioPlayer.pause();
+        isPlaying = false;
+        updatePlayButton();
+      } else {
+        const song = songs[currentIndex];
+        
+        // Try different possible column names for preview URL
+        const previewUrl = song.preview_url || song.track_preview_url || song.preview || '';
+        
+        if (previewUrl) {
+          audioPlayer.src = previewUrl;
+          try {
+            await audioPlayer.play();
+            isPlaying = true;
+            updatePlayButton();
+          } catch (error) {
+            alert('Could not play preview. The URL might be invalid or expired.');
+            console.error('Playback error:', error);
+          }
+        } else {
+          alert('No preview available for this song. Make sure your CSV includes a "preview_url" or "track_preview_url" column with Spotify preview URLs.');
+        }
+      }
+    }
+
+    function updatePlayButton() {
+      const playIcon = document.getElementById('playIcon');
+      
+      if (isPlaying) {
+        playIcon.textContent = '⏸';
+      } else {
+        playIcon.textContent = '▶️';
+      }
+    }
+
+    function updateProgressBar() {
+      if (!audioPlayer) return;
+      
+      const currentTime = audioPlayer.currentTime;
+      const duration = audioPlayer.duration || 30;
+      const progress = (currentTime / duration) * 100;
+      
+      document.getElementById('audioProgress').style.width = progress + '%';
+      document.getElementById('currentTime').textContent = formatTime(currentTime);
+      document.getElementById('duration').textContent = formatTime(duration);
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function seekAudio(event) {
+      if (!audioPlayer || !audioPlayer.duration) return;
+      
+      const progressBar = event.currentTarget;
+      const rect = progressBar.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const percentage = clickX / rect.width;
+      
+      audioPlayer.currentTime = percentage * audioPlayer.duration;
+    }
+
     function showSong(index) {
+      // Stop current audio
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        isPlaying = false;
+        updatePlayButton();
+        updateProgressBar();
+      }
+      
       currentIndex = index;
       const song = songs[index];
       
-      document.getElementById('songTitle').textContent = song.track_name || 'Unknown';
+      // Update song info
+      document.getElementById('songTitle').textContent = song.track_name || song.name || 'Unknown';
       document.getElementById('songArtist').textContent = song.artist || 'Unknown Artist';
-      document.getElementById('songAlbum').textContent = song.album || '';
+      
+      // Update album artwork
+      const albumArt = document.getElementById('albumArt');
+      const artworkUrl = song.album_art || song.album_image || song.image_url || '';
+      if (artworkUrl) {
+        albumArt.src = artworkUrl;
+      } else {
+        // Use default placeholder
+        albumArt.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect fill='%23333' width='128' height='128'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='48'%3E🎵%3C/text%3E%3C/svg%3E";
+      }
+      
       document.getElementById('currentNum').textContent = index + 1;
       
       const progress = ((index + 1) / songs.length) * 100;
@@ -243,6 +663,7 @@
 
     function saveAndNext() {
       tags[currentIndex] = [...selectedVibes];
+      saveProgress(); // Auto-save
       if (currentIndex < songs.length - 1) {
         showSong(currentIndex + 1);
       } else {
@@ -251,6 +672,7 @@
     }
 
     function skip() {
+      saveProgress(); // Auto-save even on skip
       if (currentIndex < songs.length - 1) {
         showSong(currentIndex + 1);
       }
@@ -259,6 +681,7 @@
     function goBack() {
       if (currentIndex > 0) {
         showSong(currentIndex - 1);
+        saveProgress(); // Auto-save
       }
     }
 
@@ -266,7 +689,7 @@
       let csv = 'Track Name,Artist,Album,Vibes\n';
       songs.forEach((song, idx) => {
         const vibes = tags[idx] ? tags[idx].join(';') : '';
-        csv += `"${song.track_name || ''}","${song.artist || ''}","${song.album || ''}","${vibes}"\n`;
+        csv += `"${song.track_name || song.name || ''}","${song.artist || ''}","${song.album || ''}","${vibes}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -277,7 +700,63 @@
       a.click();
       URL.revokeObjectURL(url);
 
-      alert('Tags exported! You can now use this CSV to create playlists.');
+      // Ask if user wants to clear progress after export
+      setTimeout(() => {
+        if (confirm('Export complete! Do you want to clear your saved progress?\n\n(If you plan to continue tagging later, click Cancel to keep your progress saved)')) {
+          clearProgress();
+        }
+      }, 500);
+    }
+
+    // Drag and drop functionality
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('dropZone');
+      const fileInput = document.getElementById('csvFile');
+      
+      if (!dropZone) return;
+      
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // Highlight drop zone when item is dragged over it
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+          dropZone.querySelector('div').classList.add('bg-white/30', 'border-green-400');
+        }, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+          dropZone.querySelector('div').classList.remove('bg-white/30', 'border-green-400');
+        }, false);
+      });
+      
+      // Handle dropped files
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          // Set the file to the input element
+          fileInput.files = files;
+          updateFileName();
+        }
+      }, false);
+    }
+    
+    // Initialize drag and drop when page loads
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+    } else {
+      setupDragAndDrop();
     }
   </script>
 </body>
